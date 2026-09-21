@@ -1,0 +1,88 @@
+import { useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowRight, BookOpen, CalendarPlus, Check, Clock3, Link2, MemoryStick, MessageCircle, MoreHorizontal, Music2, Pencil, Plus, Search, Sparkles, Users } from "lucide-react";
+import { activities } from "../data/demoData";
+import { useDemo } from "../state/DemoContext";
+import { Avatar, DataExplanation, EmptyState, InfoTip, Modal, ModeBadge, ProgressBar } from "../components/Common";
+import { KnowledgeGraph } from "../components/KnowledgeGraph";
+
+const tabs = ["Panoramica", "Storia", "Memorie", "Relazioni", "Attività", "Interazioni", "Andamento"];
+
+export function ResidentProfile() {
+  const { id } = useParams();
+  const [params, setParams] = useSearchParams();
+  const { state, actions } = useDemo();
+  const navigate = useNavigate();
+  const resident = state.residents.find((r) => r.id === id) || state.residents[0];
+  const requestedTab = params.get("tab");
+  const [tab, setTabState] = useState(requestedTab ? requestedTab[0].toUpperCase() + requestedTab.slice(1) : "Panoramica");
+  const [eventOpen, setEventOpen] = useState(false);
+  const [eventForm, setEventForm] = useState({ year: "", title: "", description: "", place: "", source: "Operatore", people: [] });
+  const residentMemories = state.memories.filter((m) => m.residentId === resident.id);
+  const residentInteractions = state.interactions.filter((i) => i.residentId === resident.id).slice(0, 12);
+  const hasConfirmedVongole = state.memories.some((m) => m.id === "new-vongole" && m.status === "Confermata");
+  const setTab = (next) => { setTabState(next); setParams({ tab: next.toLowerCase() }); };
+
+  if (!resident) return <EmptyState title="Ospite non trovato" />;
+
+  return <div className="profile-screen screen-enter">
+    <section className="profile-header">
+      <div className="profile-person"><Avatar resident={resident} size="xl" /><div><span className="eyebrow">OSPITE · STANZA {resident.room}</span><h1>{resident.name}</h1><p>{resident.age} anni · {resident.daysWithRoss} giorni con ROSS · ultima interazione {resident.lastInteraction}</p></div></div>
+      <div className="profile-actions"><select value={resident.mode} onChange={(e) => actions.setResidentMode(resident.id, e.target.value)} aria-label="Modalità ROSS"><option>Attiva</option><option>Reattiva</option><option>Silenziosa</option></select><button className="primary-button" onClick={() => navigate(`/interazione/${resident.id}`)}><MessageCircle size={17} /> Avvia interazione</button></div>
+    </section>
+    <div className="profile-tabs">{tabs.map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{item}</button>)}</div>
+    {tab === "Panoramica" && <Overview resident={resident} memories={residentMemories} interactions={residentInteractions} navigate={navigate} />}
+    {tab === "Storia" && <Story events={state.biography} onAdd={() => setEventOpen(true)} />}
+    {tab === "Memorie" && <MemoryLibrary memories={residentMemories} actions={actions} />}
+    {tab === "Relazioni" && <Relations resident={resident} hasConfirmedVongole={hasConfirmedVongole} />}
+    {tab === "Attività" && <ResidentActivities navigate={navigate} />}
+    {tab === "Interazioni" && <InteractionList interactions={residentInteractions} />}
+    {tab === "Andamento" && <Trend resident={resident} />}
+    <Modal open={eventOpen} title="Aggiungi evento alla storia" onClose={() => setEventOpen(false)}>
+      <form className="form-grid" onSubmit={(e) => { e.preventDefault(); actions.addBiographyEvent(eventForm); setEventOpen(false); }}>
+        <label>Anno<input required value={eventForm.year} onChange={(e) => setEventForm({ ...eventForm, year: e.target.value })} placeholder="es. 1989" /></label>
+        <label>Titolo<input required value={eventForm.title} onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })} placeholder="Titolo dell'evento" /></label>
+        <label className="span-2">Descrizione<textarea required value={eventForm.description} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })} /></label>
+        <label>Luogo<input value={eventForm.place} onChange={(e) => setEventForm({ ...eventForm, place: e.target.value })} /></label>
+        <label>Fonte<select value={eventForm.source} onChange={(e) => setEventForm({ ...eventForm, source: e.target.value })}><option>Operatore</option><option>Residente</option><option>Famiglia</option><option>Conversazioni</option></select></label>
+        <div className="modal-actions span-2"><button type="button" className="ghost-button" onClick={() => setEventOpen(false)}>Annulla</button><button className="primary-button">Aggiungi evento</button></div>
+      </form>
+    </Modal>
+  </div>;
+}
+
+function Overview({ resident, memories, interactions, navigate }) {
+  return <div className="profile-overview">
+    <div className="overview-main">
+      <article className="narrative-card surface"><span className="eyebrow">OGGI</span><h2>Una giornata ricca di musica e ricordi.</h2><p>{resident.name.split(" ")[0]} ha svolto due interazioni per 27 minuti complessivi. Ha partecipato volentieri all'attività musicale e ha parlato spontaneamente della nipote Sofia.</p><div className="narrative-stats"><div><strong>27 min</strong><span>tempo insieme</span></div><div><strong>2</strong><span>interazioni</span></div><div><strong>+0.7</strong><span>vs baseline</span></div></div></article>
+      <section className="continuity-card surface"><div><span className="eyebrow">CONTINUA DA QUI</span><h3>Fotografie e vacanze in Sicilia</h3><p>Riprendi il racconto da Palermo e collega le fotografie di Sofia.</p></div><button className="primary-button" onClick={() => navigate(`/interazione/${resident.id}`)}>Avvia <ArrowRight size={16} /></button></section>
+      <section className="recent-list surface"><header><h3>Interazioni recenti</h3><button onClick={() => {}}>Vedi tutte</button></header>{interactions.slice(0, 4).map((item) => <div key={item.id}><span className="activity-icon"><MessageCircle size={16} /></span><div><strong>{item.type} · {item.topic}</strong><small>{item.date} alle {item.time}</small></div><span>{item.duration} min</span></div>)}</section>
+    </div>
+    <aside className="overview-side">
+      <section className="surface compact-section"><h3>Interessi principali</h3><div className="tag-cloud">{resident.interests.map((i) => <span key={i}>{i}</span>)}</div></section>
+      <section className="surface compact-section"><h3>Persone importanti</h3>{["Sofia · nipote", "Anna · figlia", "Paolo · marito"].map((p) => <div className="relation-mini" key={p}><span>{p[0]}</span><strong>{p}</strong><ArrowRight size={14} /></div>)}</section>
+      <section className="surface compact-section"><h3>Ultimi ricordi</h3>{memories.slice(0, 3).map((m) => <div className="memory-mini" key={m.id}><span className={`memory-status ${m.status === "Confermata" ? "confirmed" : "pending"}`} /><div><strong>{m.title}</strong><small>{m.status}</small></div></div>)}</section>
+    </aside>
+  </div>;
+}
+
+function Story({ events, onAdd }) {
+  return <section className="content-section"><div className="content-toolbar"><div><h2>Storia di Elena</h2><p>Eventi confermati e fonti sempre visibili.</p></div><button className="primary-button" onClick={onAdd}><CalendarPlus size={16} /> Aggiungi evento</button></div><div className="biography-timeline">{events.map((event) => <article key={`${event.year}-${event.title}`}><span className="bio-year">{event.year}</span><i /><div className="surface"><div className="bio-meta"><span>{event.place}</span><span>Fonte: {event.source}</span></div><h3>{event.title}</h3><p>{event.description}</p><div>{event.people.map((p) => <span className="person-chip" key={p}>{p}</span>)}</div><button className="more-button"><MoreHorizontal size={18} /></button></div></article>)}</div></section>;
+}
+
+function MemoryLibrary({ memories, actions }) {
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("Tutte");
+  const filtered = useMemo(() => memories.filter((m) => (status === "Tutte" || m.status === status) && `${m.title} ${m.description} ${m.tags.join(" ")}`.toLowerCase().includes(query.toLowerCase())), [memories, query, status]);
+  return <section className="content-section"><div className="content-toolbar"><div><h2>Memory Library</h2><p>Ricordi strutturati, verificabili e riutilizzabili nelle interazioni.</p></div><button className="primary-button"><Plus size={16} /> Nuova memoria</button></div><div className="filter-bar"><label><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca nelle memorie" /></label><select value={status} onChange={(e) => setStatus(e.target.value)}><option>Tutte</option><option>Confermata</option><option>Da verificare</option><option>Suggerita</option></select></div><div className="memory-grid">{filtered.map((memory) => <article className="memory-card surface" key={memory.id}><header><span>{memory.category}</span><span className={`status-pill status-${memory.status.toLowerCase().replaceAll(" ", "-")}`}>{memory.status}</span></header><h3>{memory.title}</h3><p>{memory.description}</p><div className="memory-source"><strong>Fonte</strong><span>{memory.source}</span><strong>Confidenza</strong><span>{memory.confidence}%</span></div><div className="tag-row">{memory.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><footer><small>Ultimo utilizzo: {memory.lastUsed}</small><div>{memory.status !== "Confermata" && <button onClick={() => actions.confirmMemory(memory)} title="Conferma memoria"><Check size={16} /></button>}<button title="Collega"><Link2 size={16} /></button><button title="Modifica"><Pencil size={16} /></button></div></footer></article>)}</div></section>;
+}
+
+function Relations({ resident, hasConfirmedVongole }) {
+  return <section className="content-section"><div className="content-toolbar"><div><h2>Relazioni e contesti</h2><p>Il grafo mostra frequenza, ricorrenza e associazioni. Non misura la qualità affettiva.</p></div><select><option>Ultimi 30 giorni</option><option>Ultimi 90 giorni</option><option>Tutto il periodo</option></select></div><KnowledgeGraph addedMemory={hasConfirmedVongole} /><div className="relation-summary-grid"><article className="surface social-score"><span>Indice di socialità <InfoTip label="Indice di socialità" text="Combina frequenza, iniziativa, partecipazione e varietà dei contesti osservati da ROSS. Non è una valutazione clinica." /></span><strong>{resident.participation || "—"} <small>/ 10</small></strong><p>+0.6 rispetto alla baseline personale</p><ProgressBar value={(resident.participation || 0) * 10} tone="mint" /></article><article className="surface"><h3>Contesti osservati</h3><div className="distribution-bars"><div><span>Attività di gruppo</span><i style={{ width: "72%" }} /></div><div><span>Conversazioni individuali</span><i style={{ width: "88%" }} /></div><div><span>Famiglia</span><i style={{ width: "51%" }} /></div></div></article><article className="surface"><h3>Connessioni ricorrenti</h3><p>Sofia, fotografia e Sicilia compaiono insieme in 6 interazioni recenti.</p><DataExplanation>ROSS segnala l'associazione; l'operatore decide se usarla.</DataExplanation></article></div></section>;
+}
+
+function ResidentActivities({ navigate }) { return <section className="content-section"><div className="content-toolbar"><div><h2>Attività suggerite</h2><p>Selezionate in base a interessi, routine e interazioni precedenti.</p></div></div><div className="activity-grid compact">{activities.slice(0, 6).map((a) => <article className="activity-card surface" key={a.id}><span className="activity-icon"><Music2 size={18} /></span><small>{a.category}</small><h3>{a.title}</h3><p>{a.reason}</p><footer><span><Clock3 size={14} /> {a.duration} min</span><button onClick={() => navigate("/interazione/elena")}>Avvia <ArrowRight size={15} /></button></footer></article>)}</div></section>; }
+
+function InteractionList({ interactions }) { return <section className="content-section"><div className="content-toolbar"><div><h2>Storico interazioni</h2><p>Temi, durata, modalità e memorie utilizzate.</p></div></div><div className="table-wrap surface"><table><thead><tr><th>Data</th><th>Tipologia</th><th>Tema</th><th>Durata</th><th>Modalità</th><th>Memorie</th></tr></thead><tbody>{interactions.map((i) => <tr key={i.id}><td>{i.date}<small>{i.time}</small></td><td>{i.type}</td><td>{i.topic}</td><td>{i.duration} min</td><td><ModeBadge mode={i.mode} /></td><td>{i.memoriesUsed}</td></tr>)}</tbody></table></div></section>; }
+
+function Trend({ resident }) { return <section className="content-section"><div className="content-toolbar"><div><h2>Andamento personale</h2><p>Confronti sempre riferiti alla baseline di {resident.name.split(" ")[0]}.</p></div><select><option>Ultimi 30 giorni</option><option>Ultimi 90 giorni</option></select></div><div className="trend-grid">{[["Partecipazione", 76, "+6%"], ["Iniziativa conversazionale", 64, "−2%"], ["Varietà dei contesti", 82, "+9%"], ["Continuità", 71, "+3%"]].map(([label, value, delta]) => <article className="surface" key={label}><span>{label}</span><strong>{value}%</strong><ProgressBar value={value} tone="mint" /><small>{delta} rispetto alla baseline</small></article>)}</div><DataExplanation>Questi indicatori descrivono solo ciò che accade durante le interazioni con ROSS e non rappresentano valutazioni cliniche.</DataExplanation></section>; }
