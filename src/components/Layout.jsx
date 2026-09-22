@@ -8,10 +8,10 @@ import { Modal, ModeBadge } from "./Common";
 const nav = [
   ["/", "Panoramica", Home], ["/ospiti", "Ospiti", Users], ["/attivita", "Attività", Activity], ["/interazioni", "Interazioni", Sparkles], ["/consegne", "Passaggio consegne", ClipboardCheck], ["/insight", "Insight", Lightbulb], ["/analytics", "Analytics", BarChart3], ["/report", "Report", FileText], ["/struttura", "Struttura", Building2],
 ];
-const presentationRoutes = ["/", "/ospiti/elena?tab=relazioni", "/ospiti/elena?tab=memorie", "/attivita", "/interazione/elena", "/report", "/consegne"];
+const presentationRoutes = ["/", "/ross", "/ross/conversazione", "/ospiti/elena?tab=memorie", "/ospiti/elena?tab=relazioni", "/famiglia", "/report", "/consegne"];
 
 export function Layout() {
-  const { state, actions, toast } = useDemo();
+  const { state, actions } = useDemo();
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -70,7 +70,6 @@ export function Layout() {
         <main className="page"><Outlet /></main>
       </div>
       {state.presentation && <button className="demo-next" onClick={nextPresentation}>Avanti nella demo <span>→</span></button>}
-      {toast && <div className={`toast toast-${toast.tone}`}><ClipboardCheck size={18} />{toast.message}</div>}
       <Modal open={searchOpen} title="Cerca in ROSS" onClose={() => { setSearchOpen(false); setQuery(""); }} size="lg">
         <div className="command-search"><Search size={20} /><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca ospiti, memorie, attività, insight…" /></div>
         <div className="search-results">

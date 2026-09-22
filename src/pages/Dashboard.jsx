@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Activity, ArrowRight, Clock3, MemoryStick, MessageCircle, Users } from "lucide-react";
+import { Activity, ArrowRight, Clock3, MemoryStick, MessageCircle, Sparkles, Users } from "lucide-react";
 import { dayTimeline, insights, residents } from "../data/demoData";
 import { useDemo } from "../state/DemoContext";
 import { Avatar, InfoTip, Metric, ModeBadge } from "../components/Common";
@@ -22,6 +22,11 @@ export function Dashboard() {
         <div><h1>Una giornata che conta,<br />insieme.</h1><p>ROSS rende leggibili interazioni, ricordi e piccoli cambiamenti nel ritmo unico di ogni persona.</p></div>
         <blockquote>“Piccoli segnali,<br />grandi connessioni.”<small>R.O.S.S.</small></blockquote>
       </section>
+      {state.rossJourney.completedAt && <section className="cross-view-update">
+        <span><Sparkles /></span>
+        <div><small>AGGIORNAMENTO DA ROSS · ELENA</small><strong>{state.rossJourney.confirmedAt ? "Il nuovo ricordo è stato confermato e collegato alla storia." : "È emerso un nuovo ricordo durante la conversazione su Cefalù."}</strong><p>{state.rossJourney.confirmedAt ? "Profilo, grafo, report e vista famiglia sono già aggiornati." : "La macchina fotografica rossa di Paolo è pronta per la verifica."}</p></div>
+        <button className="primary-button" onClick={() => navigate("/ospiti/elena?tab=memorie")}>{state.rossJourney.confirmedAt ? "Apri il profilo" : "Verifica memoria"}<ArrowRight size={16} /></button>
+      </section>}
       <section className="metrics-strip">
         <Metric icon={Users} value={activeResidents} label="ospiti attivi" detail="su 8 ospiti" tone="mint" tip="Ospiti con almeno una interazione o attività registrata oggi." />
         <Metric icon={MessageCircle} value={today.length} label="interazioni oggi" detail="+2 rispetto a ieri" tone="coral" />

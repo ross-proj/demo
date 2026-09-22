@@ -4,7 +4,7 @@ import { Filter, Focus, Minus, Plus, X } from "lucide-react";
 import { graphData } from "../data/demoData";
 
 const colors = { residente: "#0c554d", persona: "#ef7857", luogo: "#e4aa42", interesse: "#56b99c", musica: "#9b83ba", evento: "#e7a38d", memoria: "#d76b48" };
-const positions = { Elena: [0, 0], Sofia: [-150, -80], Paolo: [130, -95], Anna: [150, 100], Palermo: [250, -35], "Cefalù": [245, 95], Fotografia: [-145, 105], Mina: [-20, -145], "Viaggio 1998": [125, 10], Giardinaggio: [-240, 20], "Vongole in Sicilia": [45, 145] };
+const positions = { Elena: [0, 0], Sofia: [-150, -80], Paolo: [130, -95], Anna: [150, 100], Palermo: [250, -35], "Cefalù": [245, 95], Fotografia: [-145, 105], Mina: [-20, -145], "Viaggio 1998": [125, 10], Giardinaggio: [-240, 20], "Fotocamera rossa": [45, 145] };
 
 export function KnowledgeGraph({ addedMemory }) {
   const graphRef = useRef();
@@ -13,7 +13,7 @@ export function KnowledgeGraph({ addedMemory }) {
   const data = useMemo(() => {
     const nodes = [...graphData.nodes];
     const links = [...graphData.links];
-    if (addedMemory) { nodes.push({ id: "Vongole in Sicilia", group: "memoria", size: 7, detail: "Nuova memoria confermata" }); links.push({ source: "Elena", target: "Vongole in Sicilia" }, { source: "Vongole in Sicilia", target: "Paolo" }); }
+    if (addedMemory) { nodes.push({ id: "Fotocamera rossa", group: "memoria", size: 7, detail: "Nuova memoria confermata durante la conversazione con ROSS" }); links.push({ source: "Elena", target: "Fotocamera rossa" }, { source: "Fotocamera rossa", target: "Paolo" }, { source: "Fotocamera rossa", target: "Cefalù" }, { source: "Fotocamera rossa", target: "Fotografia" }); }
     const visibleNodes = nodes.filter((n) => !hidden.includes(n.group)).map((n) => ({ ...n, fx: positions[n.id]?.[0], fy: positions[n.id]?.[1] }));
     const ids = new Set(visibleNodes.map((n) => n.id));
     return { nodes: visibleNodes, links: links.filter((l) => ids.has(typeof l.source === "object" ? l.source.id : l.source) && ids.has(typeof l.target === "object" ? l.target.id : l.target)) };

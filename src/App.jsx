@@ -1,7 +1,10 @@
-import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { ClipboardCheck } from "lucide-react";
 import { DemoProvider } from "./state/DemoContext";
 import { Layout } from "./components/Layout";
+import { PerspectiveSwitcher } from "./components/PerspectiveSwitcher";
+import { useDemo } from "./state/DemoContext";
 
 const load = (module, name) => lazy(() => module().then((exports) => ({ default: exports[name] })));
 const Dashboard = load(() => import("./pages/Dashboard"), "Dashboard");
@@ -16,7 +19,21 @@ const AnalyticsPage = load(() => import("./pages/OperationalPages"), "AnalyticsP
 const ReportsPage = load(() => import("./pages/OperationalPages"), "ReportsPage");
 const SettingsPage = load(() => import("./pages/Settings"), "SettingsPage");
 const StructurePage = load(() => import("./pages/Settings"), "StructurePage");
+const FamilyExperience = load(() => import("./pages/FamilyExperience"), "FamilyExperience");
+const RossHome = load(() => import("./pages/RossExperience"), "RossHome");
+const RossConversation = load(() => import("./pages/RossExperience"), "RossConversation");
+
+function GlobalChrome() {
+  const { toast } = useDemo();
+  return <><PerspectiveSwitcher />{toast && <div className={`toast toast-${toast.tone}`}><ClipboardCheck size={18} />{toast.message}</div>}</>;
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 
 export function App() {
-  return <BrowserRouter><DemoProvider><Suspense fallback={<div className="route-loading"><span /><p>ROSS sta preparando il contesto…</p></div>}><Routes><Route element={<Layout />}><Route path="/" element={<Dashboard />} /><Route path="/ospiti" element={<Residents />} /><Route path="/ospiti/:id" element={<ResidentProfile />} /><Route path="/attivita" element={<Activities />} /><Route path="/interazioni" element={<InteractionsPage />} /><Route path="/consegne" element={<HandoverPage />} /><Route path="/insight" element={<InsightsPage />} /><Route path="/analytics" element={<AnalyticsPage />} /><Route path="/report" element={<ReportsPage />} /><Route path="/struttura" element={<StructurePage />} /><Route path="/impostazioni" element={<SettingsPage />} /></Route><Route path="/interazione/:id" element={<LiveInteraction />} /></Routes></Suspense></DemoProvider></BrowserRouter>;
+  return <BrowserRouter><DemoProvider><ScrollToTop /><Suspense fallback={<div className="route-loading"><span /><p>ROSS sta preparando il contesto…</p></div>}><Routes><Route element={<Layout />}><Route path="/" element={<Dashboard />} /><Route path="/ospiti" element={<Residents />} /><Route path="/ospiti/:id" element={<ResidentProfile />} /><Route path="/attivita" element={<Activities />} /><Route path="/interazioni" element={<InteractionsPage />} /><Route path="/consegne" element={<HandoverPage />} /><Route path="/insight" element={<InsightsPage />} /><Route path="/analytics" element={<AnalyticsPage />} /><Route path="/report" element={<ReportsPage />} /><Route path="/struttura" element={<StructurePage />} /><Route path="/impostazioni" element={<SettingsPage />} /></Route><Route path="/interazione/:id" element={<LiveInteraction />} /><Route path="/famiglia" element={<FamilyExperience />} /><Route path="/ross" element={<RossHome />} /><Route path="/ross/conversazione" element={<RossConversation />} /><Route path="*" element={<Dashboard />} /></Routes><GlobalChrome /></Suspense></DemoProvider></BrowserRouter>;
 }
