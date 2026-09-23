@@ -11,6 +11,38 @@ const initialRossJourney = {
   confirmedAt: null,
 };
 
+const initialFamilyContributions = [
+  {
+    id: "family-cefalu-postcard",
+    createdAt: "2026-09-14T18:30:00.000Z",
+    kind: "photo",
+    title: "Cartolina di Cefalù",
+    detail: "Una foto che Anna conserva dal viaggio del 1998. Sul retro Paolo aveva scritto: “La luce più bella è quella della sera”.",
+    author: "Anna",
+    people: ["Paolo"],
+    place: "Cefalù",
+    period: "1998",
+    image: "/cefalu-postcard.svg",
+    status: "Confermato",
+  },
+  {
+    id: "family-call-mina",
+    createdAt: "2026-09-08T10:15:00.000Z",
+    kind: "topic",
+    title: "La canzone preferita di Mina",
+    detail: "Anna suggerisce di chiederle quale canzone ascoltava mentre preparava il pranzo della domenica.",
+    author: "Anna",
+    people: ["Anna"],
+    place: "Casa di Treviso",
+    period: "Anni 80",
+    status: "Disponibile a ROSS",
+  },
+];
+
+const initialScheduledActivities = [
+  { id: "scheduled-photo-group", activityId: "photos", title: "Fotografie di viaggio", residentId: "elena", date: "2026-09-22", time: "10:30", owner: "Giulia Serra", status: "Programmata", visibleToFamily: true },
+];
+
 function defaultState() {
   return {
     theme: "ross",
@@ -22,7 +54,8 @@ function defaultState() {
     schedule: initialSchedule,
     notes: [],
     takenInsights: [],
-    familyContributions: [],
+    familyContributions: initialFamilyContributions,
+    scheduledActivities: initialScheduledActivities,
     rossJourney: initialRossJourney,
   };
 }
@@ -37,7 +70,8 @@ function getInitialState() {
         ...defaults,
         ...parsed,
         presentation: new URLSearchParams(window.location.search).get("presentation") === "true" || Boolean(parsed.presentation),
-        familyContributions: parsed.familyContributions || [],
+        familyContributions: parsed.familyContributions || initialFamilyContributions,
+        scheduledActivities: parsed.scheduledActivities || initialScheduledActivities,
         rossJourney: { ...initialRossJourney, ...(parsed.rossJourney || {}) },
       };
     }
@@ -74,13 +108,27 @@ export function DemoProvider({ children }) {
         const memories = exists ? prev.memories.map((m) => m.id === memory.id ? { ...m, status: "Confermata", confidence: 100 } : m) : [{ ...memory, status: "Confermata", confidence: 100 }, ...prev.memories];
         const isRossCandidate = memory.id === "ross-cefalu-camera";
         const biographyEvent = { year: "1998", title: "La macchina fotografica di Paolo", description: "Durante il viaggio in Sicilia Paolo portava una piccola macchina fotografica rossa e fotografava Elena sul lungomare di Cefalù.", place: "Cefalù", people: ["Paolo"], source: "Confermata da Elena" };
-        const biography = isRossCandidate && !prev.biography.some((event) => event.title === biographyEvent.title)
-          ? [...prev.biography, biographyEvent].sort((a, b) => a.year.localeCompare(b.year))
+        const familyEvent = memory.familyContributionId ? {
+          year: memory.period || "Periodo da precisare",
+          title: memory.title,
+          description: memory.description,
+          place: memory.place || "—",
+          people: memory.people || [],
+          source: "Contributo famiglia · verificato dalla struttura",
+        } : null;
+        let biography = isRossCandidate && !prev.biography.some((event) => event.title === biographyEvent.title)
+          ? [...prev.biography, biographyEvent]
           : prev.biography;
+        if (familyEvent && !biography.some((event) => event.title === familyEvent.title)) biography = [...biography, familyEvent];
+        biography = biography.sort((a, b) => a.year.localeCompare(b.year));
+        const familyContributions = memory.familyContributionId
+          ? prev.familyContributions.map((item) => item.id === memory.familyContributionId ? { ...item, status: "Confermato" } : item)
+          : prev.familyContributions;
         return {
           ...prev,
           memories,
           biography,
+          familyContributions,
           rossJourney: isRossCandidate ? { ...prev.rossJourney, confirmedAt: new Date().toISOString() } : prev.rossJourney,
         };
       });
@@ -89,6 +137,14 @@ export function DemoProvider({ children }) {
     archiveMemory: (id) => {
       setState((prev) => ({ ...prev, memories: prev.memories.filter((m) => m.id !== id) }));
       notify("Memoria archiviata", "neutral");
+    },
+    addMemory: (memory) => {
+      setState((prev) => ({ ...prev, memories: [{ id: `manual-${Date.now()}`, residentId: "elena", category: "Ricordi", status: "Da verificare", confidence: 60, lastUsed: "Mai", tags: [], people: [], ...memory }, ...prev.memories] }));
+      notify("Nuova memoria aggiunta alla verifica");
+    },
+    updateMemory: (id, patch) => {
+      setState((prev) => ({ ...prev, memories: prev.memories.map((memory) => memory.id === id ? { ...memory, ...patch } : memory) }));
+      notify("Memoria aggiornata");
     },
     addBiographyEvent: (event) => {
       setState((prev) => ({ ...prev, biography: [...prev.biography, event].sort((a, b) => a.year.localeCompare(b.year)) }));
@@ -141,8 +197,39 @@ export function DemoProvider({ children }) {
       notify("Conversazione salvata: è emerso un nuovo ricordo");
     },
     addFamilyContribution: (contribution) => {
-      setState((prev) => ({ ...prev, familyContributions: [{ id: `family-${Date.now()}`, createdAt: new Date().toISOString(), ...contribution }, ...prev.familyContributions] }));
-      notify("Contributo condiviso con la storia di Elena");
+      const id = `family-${Date.now()}`;
+      const contributionRecord = { id, createdAt: new Date().toISOString(), status: contribution.kind === "note" ? "Inviato alla struttura" : contribution.kind === "topic" || contribution.kind === "music" ? "Disponibile a ROSS" : "Da verificare", ...contribution };
+      setState((prev) => {
+        const createsMemory = contribution.kind === "memory" || contribution.kind === "photo";
+        const memory = createsMemory ? {
+          id: `memory-${id}`,
+          familyContributionId: id,
+          residentId: "elena",
+          title: contribution.title,
+          category: contribution.kind === "photo" ? "Fotografie" : "Ricordi",
+          description: contribution.detail,
+          source: `Famiglia · ${contribution.author || "Anna"} · oggi`,
+          status: "Da verificare",
+          confidence: 70,
+          lastUsed: "Mai",
+          tags: [contribution.place, contribution.period].filter(Boolean),
+          people: contribution.people || [],
+          place: contribution.place || "",
+          period: contribution.period || "",
+          image: contribution.image || null,
+        } : null;
+        return {
+          ...prev,
+          familyContributions: [contributionRecord, ...prev.familyContributions],
+          memories: memory ? [memory, ...prev.memories] : prev.memories,
+          notes: contribution.kind === "note" ? [{ id, residentId: "elena", source: "Famiglia", text: contribution.detail, time: "17:26" }, ...prev.notes] : prev.notes,
+        };
+      });
+      notify(contribution.kind === "memory" || contribution.kind === "photo" ? "Contributo inviato alla verifica della struttura" : "Contributo disponibile a ROSS");
+    },
+    scheduleActivity: (activity) => {
+      setState((prev) => ({ ...prev, scheduledActivities: [{ id: `scheduled-${Date.now()}`, status: "Programmata", owner: "Giulia Serra", ...activity }, ...prev.scheduledActivities] }));
+      notify("Attività programmata e collegata alla giornata");
     },
     addNote: (note) => {
       setState((prev) => ({ ...prev, notes: [{ id: Date.now(), ...note }, ...prev.notes] }));

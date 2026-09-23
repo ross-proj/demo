@@ -20,6 +20,11 @@ const ReportsPage = load(() => import("./pages/OperationalPages"), "ReportsPage"
 const SettingsPage = load(() => import("./pages/Settings"), "SettingsPage");
 const StructurePage = load(() => import("./pages/Settings"), "StructurePage");
 const FamilyExperience = load(() => import("./pages/FamilyExperience"), "FamilyExperience");
+const FamilyStory = load(() => import("./pages/FamilyExperience"), "FamilyStory");
+const FamilyMemoryDetail = load(() => import("./pages/FamilyExperience"), "FamilyMemoryDetail");
+const FamilyActivities = load(() => import("./pages/FamilyExperience"), "FamilyActivities");
+const FamilyActivityDetail = load(() => import("./pages/FamilyExperience"), "FamilyActivityDetail");
+const FamilyShared = load(() => import("./pages/FamilyExperience"), "FamilyShared");
 const RossHome = load(() => import("./pages/RossExperience"), "RossHome");
 const RossConversation = load(() => import("./pages/RossExperience"), "RossConversation");
 
@@ -35,5 +40,5 @@ function ScrollToTop() {
 }
 
 export function App() {
-  return <BrowserRouter><DemoProvider><ScrollToTop /><Suspense fallback={<div className="route-loading"><span /><p>ROSS sta preparando il contesto…</p></div>}><Routes><Route element={<Layout />}><Route path="/" element={<Dashboard />} /><Route path="/ospiti" element={<Residents />} /><Route path="/ospiti/:id" element={<ResidentProfile />} /><Route path="/attivita" element={<Activities />} /><Route path="/interazioni" element={<InteractionsPage />} /><Route path="/consegne" element={<HandoverPage />} /><Route path="/insight" element={<InsightsPage />} /><Route path="/analytics" element={<AnalyticsPage />} /><Route path="/report" element={<ReportsPage />} /><Route path="/struttura" element={<StructurePage />} /><Route path="/impostazioni" element={<SettingsPage />} /></Route><Route path="/interazione/:id" element={<LiveInteraction />} /><Route path="/famiglia" element={<FamilyExperience />} /><Route path="/ross" element={<RossHome />} /><Route path="/ross/conversazione" element={<RossConversation />} /><Route path="*" element={<Dashboard />} /></Routes><GlobalChrome /></Suspense></DemoProvider></BrowserRouter>;
+  return <BrowserRouter><DemoProvider><ScrollToTop /><Suspense fallback={<div className="route-loading"><span /><p>ROSS sta preparando il contesto…</p></div>}><Routes><Route element={<Layout />}><Route path="/" element={<Dashboard />} /><Route path="/ospiti" element={<Residents />} /><Route path="/ospiti/:id" element={<ResidentProfile />} /><Route path="/attivita" element={<Activities />} /><Route path="/interazioni" element={<InteractionsPage />} /><Route path="/consegne" element={<HandoverPage />} /><Route path="/insight" element={<InsightsPage />} /><Route path="/analytics" element={<AnalyticsPage />} /><Route path="/report" element={<ReportsPage />} /><Route path="/struttura" element={<StructurePage />} /><Route path="/impostazioni" element={<SettingsPage />} /></Route><Route path="/interazione/:id" element={<LiveInteraction />} /><Route path="/famiglia" element={<FamilyExperience />} /><Route path="/famiglia/storia" element={<FamilyStory />} /><Route path="/famiglia/ricordi/:id" element={<FamilyMemoryDetail />} /><Route path="/famiglia/attivita" element={<FamilyActivities />} /><Route path="/famiglia/attivita/:id" element={<FamilyActivityDetail />} /><Route path="/famiglia/condivisi" element={<FamilyShared />} /><Route path="/ross" element={<RossHome />} /><Route path="/ross/conversazione" element={<RossConversation />} /><Route path="*" element={<Dashboard />} /></Routes><GlobalChrome /></Suspense></DemoProvider></BrowserRouter>;
 }
